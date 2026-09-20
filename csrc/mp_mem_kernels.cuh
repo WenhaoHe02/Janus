@@ -1,0 +1,155 @@
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#include "mem_kernels.cuh"  // TransferDirection, GPUKVFormat
+
+#include <c10/cuda/CUDAGuard.h>
+#include <vector>
+
+struct PageBufferShapeDesc {
+  int kv_size;       // 1 or 2
+  int nl;            // num layers
+  int nb;            // num blocks
+  int bs;            // block size
+  int nh;            // num heads
+  int hs;            // head size
+  int element_size;  // bytes (1 or 2)
+  // Physical per-block stride in source-dtype element units, used by
+  // formats whose dim-0 is the block axis to step over padding bytes
+  // (e.g. DeepSeek V4 compressor / indexer caches sharing a vLLM KV
+  // pool with larger attn groups, whose rows are padded up to the
+  // pool's max row width). 0 means "unset — fall back to the
+  // format-specific tight stride".
+  //
+  // CONTRACT: pass ``tensor.stride(0)`` verbatim. PyTorch stride
+  // semantics already absorb every inner-dim extent (including
+  // ``kv_size``), so DO NOT pre-multiply by any inner dim.
+  //
+  // Honoured today only by NL_X_NB_BS_HS (per-layer [NB, BS, HS],
+  // MLA). NL_X_NB_TWO_BS_NH_HS is restricted to the tight form
+  // upstream and leaves this field at 0; all other formats either
+  // pack non-block info into dim-0 or do not support dim-0 padding,
+  // and ignore this field.
+  int block_stride_elems;
+
+  template <typename ScalarType>
+  __host__ __device__ inline size_t scalars_per_head() const {
+    return hs * element_size / sizeof(ScalarType);
+  }
+
+  template <typename ScalarType>
+  __host__ __device__ inline size_t scalars_per_token() const {
+    return nh * hs * element_size / sizeof(ScalarType);
+  }
+
+  // Per (K or V) block step along dim-0, expressed in ``ScalarType``
+  // element units (the kernel's working dtype, e.g. uint4 / uint32_t /
+  // uint16_t). Returns the tight ``bs * nh * hs`` by default, or the
+  // physical ``block_stride_elems`` when dim-0 carries padding (today
+  // only NL_X_NB_BS_HS, see ``block_stride_elems`` above). Every
+  // ``calculate_engine_global_offset`` branch uses this as the dim-0
+  // step, so honouring padding here propagates to all formats without
+  // per-branch changes.
+  template <typename ScalarType>
+  __host__ __device__ inline size_t scalars_per_block() const {
+    const size_t elems = block_stride_elems > 0
+                             ? static_cast<size_t>(block_stride_elems)
+                             : static_cast<size_t>(bs) * nh * hs;
+    return elems * element_size / sizeof(ScalarType);
+  }
+};
+
+template <typename ScalarType>
+struct MemoryObj4 {
+  ScalarType* objects[4];
+  int num_objects;  // 0 - 4
+};
+
+/**
+ * Block-level multi-layer KV transfer between vLLM paged buffers and
+ * LMCache contiguous memory objects.
+ *
+ * @param paged_buffer_ptrs_tensor  GPU int64 tensor of data pointers into
+ *                                  vLLM paged buffers (one per tensor)
+ * @param lmcache_objects_ptrs      Raw pointers to LMCache memory objects
+ * @param block_ids                 GPU int64 tensor of block indices in vLLM
+ *                                  paged buffer
+ * @param device                    CUDA device of vLLM tensors
+ * @param direction                 H2D (LMCache->vLLM) or D2H (vLLM->LMCache)
+ * @param shape_desc                Shape descriptor for the paged buffer
+ * @param lmcache_chunk_size        Tokens per LMCache memory object
+ * @param gpu_kv_format             GPUKVFormat identifier
+ * @param skip_prefix_n_blocks      Number of blocks to skip at the beginning
+ */
+void multi_layer_block_kv_transfer(
+    const torch::Tensor& paged_buffer_ptrs_tensor,
+    std::vector<int64_t> lmcache_objects_ptrs, const torch::Tensor& block_ids,
+    const torch::Device& device, TransferDirection direction,
+    PageBufferShapeDesc shape_desc, int lmcache_chunk_size,
+    GPUKVFormat gpu_kv_format, int skip_prefix_n_blocks);
+
+// Batched transfer from any number of LMCache objects. Source pointers come
+// from a CUDA int64 tensor, avoiding the four-object launch limit.
+void multi_layer_block_kv_transfer_batched(
+    const torch::Tensor& paged_buffer_ptrs_tensor,
+    const torch::Tensor& lmcache_objects_ptrs_tensor,
+    const torch::Tensor& block_ids, const torch::Device& device,
+    TransferDirection direction, PageBufferShapeDesc shape_desc,
+    int lmcache_chunk_size, GPUKVFormat gpu_kv_format,
+    int skip_prefix_n_blocks);
+
+/**
+ * Enqueue a complete layer-wise CPU-to-GPU transfer plan in one native call.
+ *
+ * Host sources, reusable GPU staging tensors, paged-cache pointer tensors,
+ * and static shape metadata are parallel arrays with one entry per registered
+ * cache tensor. Block-ID tensors are supplied once per kernel group and sliced
+ * natively for each transfer. CUDA events are recorded after the cumulative
+ * transfer counts in event_boundaries.
+ */
+void enqueue_layerwise_h2d_scatter(
+    std::vector<torch::Tensor> paged_buffer_ptrs_tensors,
+    std::vector<torch::Tensor> host_sources,
+    std::vector<torch::Tensor> staging_destinations,
+    std::vector<torch::Tensor> block_ids_by_kernel_group,
+    const torch::Device& device,
+    std::vector<PageBufferShapeDesc> shape_descs,
+    std::vector<int64_t> lmcache_chunk_sizes,
+    std::vector<int64_t> gpu_kv_formats,
+    std::vector<int64_t> skip_prefix_n_blocks,
+    std::vector<int64_t> block_id_group_indices,
+    std::vector<int64_t> block_id_starts,
+    std::vector<int64_t> block_id_ends,
+    std::vector<int64_t> event_ptrs,
+    std::vector<int64_t> event_boundaries);
+
+// Scatter fixed-width rows from GPU object pointers. destination_rows maps
+// source rows to flat rows or to (block, slot) locations.
+void scatter_rows_from_object_ptrs(const torch::Tensor& source_ptrs,
+                                   const torch::Tensor& destination,
+                                   const torch::Tensor& destination_rows,
+                                   int rows_per_object, int row_bytes,
+                                   int logical_slots_per_block,
+                                   bool source_ptrs_aligned);
+
+/**
+ * Pack registered host-memory segments into one pinned host destination.
+
+ * *
+ * The CUDA kernel reads the CPU snapshot through mapped pinned-memory
+ * aliases
+ * and writes the final layer-major byte layout through the
+ * destination's
+ * mapped alias. This removes the Python loop over tens of
+ * thousands of small
+ * memoryview slices while preserving the CPU snapshot
+ * lifetime contract.
+ */
+void pack_pinned_host_segments(std::vector<int64_t> source_host_ptrs,
+                               std::vector<int64_t> source_indices,
+                               std::vector<int64_t> source_offsets,
+                               std::vector<int64_t> destination_offsets,
+                               std::vector<int64_t> lengths,
+                               const torch::Tensor& destination,
+                               const torch::Device& device);

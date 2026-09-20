@@ -1,0 +1,130 @@
+{
+  "model": "glm",
+  "files": [
+    {
+      "path": "lmcache/__init__.py",
+      "before_sha256": "5023e9ca3368d6184e457c0813f0845b63134f89127c277e5f34d0fa88f12854",
+      "after_sha256": "0fa390d59f1bff4c9787358d8db26af0a55a398a62ba0dc469a0e38faa17b4c1"
+    },
+    {
+      "path": "lmcache/integration/vllm/glm_dsa_vllm_0202.py",
+      "before_sha256": "95abb7aa3148b05c9fa4c21524fb797d4a041c2adc22f804506302a82040f795",
+      "after_sha256": "5861d6f1b4332d02f80bded82a270035b86617e233d9460840293fd0a864f91f"
+    },
+    {
+      "path": "lmcache/integration/vllm/vllm_v1_adapter.py",
+      "before_sha256": "25abe610000214abcc2f7914e530f01b2dadc2045eaedfd04ed7787dc9b715fe",
+      "after_sha256": "949e3a69a2010402e69f2532b08caaf6ce354c9d5c6a632dad3f5523d6238d4b"
+    },
+    {
+      "path": "lmcache/v1/cache_engine.py",
+      "before_sha256": "edf851166d38e804fdb61bd5673f006f9b11a54e7226352dc4b93648ba605a32",
+      "after_sha256": "f41dcfe7df0376499956a712b0d4037c1f0eb436925fd39fe284f808e51eb41d"
+    },
+    {
+      "path": "lmcache/v1/csa_attention_kv_prefetch_manager.py",
+      "before_sha256": "760dcd058614fd8cb12e3288b6db5c9458ceabb398a6bef158781e0b897b357b",
+      "after_sha256": "7bf756d75b67e9e41a2ce17c8636621b348f93144348c7bd4656c005208c3627"
+    },
+    {
+      "path": "lmcache/v1/csa_prefill_cp_scorer.py",
+      "before_sha256": "9a823aedd45d4dbbc94c1d8a4eafd0031b8162a070988a6c849cc8acb9d2544a",
+      "after_sha256": "147a8c551c674b377fbe70e0d2da93bf647271f11886cafce97a34bc0848e9a1"
+    },
+    {
+      "path": "lmcache/v1/glm_dsa_predictive_prefetch.py",
+      "before_sha256": "278508ac74fba88dae3136e2caa94ca7ec9d4b066059831294e23be58e9d6f31",
+      "after_sha256": "a08cf8b009f98887f83bcde424a1597ebdf0b2c4e4d1341c73ba5c2a65c9aad8"
+    },
+    {
+      "path": "lmcache/v1/gpu_connector/tutti_direct_loader.py",
+      "before_sha256": "6174073f641f4d21891ae852534fb63f499b68a1c794251d54c2b30dfee37226",
+      "after_sha256": "082fa01bcce505eb811aa64de67d9e5d5b6e81300ac9164188b8b2d591bf1373"
+    },
+    {
+      "path": "lmcache/v1/indexer_ssd_manager.py",
+      "before_sha256": "e63601442d8ccd37989bf404cfd57232fdc65b2173161e27c3435cf3d3a33de8",
+      "after_sha256": "af2b412c0c5507c0feaab7ab7c7f32df2649749b374decc1b3de918ca34c637e"
+    },
+    {
+      "path": "lmcache/v1/lookup_client/lmcache_lookup_client.py",
+      "before_sha256": "f9ab626cf4faab3a398238ddaee0a4a2681566de1782849a616a5e81b09065f9",
+      "after_sha256": "f6b55bae1a9c8251740d98691bd5cd38425020d6449e6a1b03d983bb1230481b"
+    },
+    {
+      "path": "lmcache/v1/ssd_tp_sharded_prefetch.py",
+      "before_sha256": "9c19cde6505fe314b0eb72891697aa3bc8a7c3717c439959e8a8e0d02df2c44a",
+      "after_sha256": "616cb8e7bc1f1a77ba0c73afd0f8c2fcbeb4af8eef584975d32de4483f99aeb7"
+    },
+    {
+      "path": "vllm/distributed/kv_transfer/kv_connector/v1/lmcache_connector.py",
+      "before_sha256": "ae9fa2de201a5df9329e2cf8900ebf3e4bee1f4ba8d6658b69c785bae86b339d",
+      "after_sha256": "5a8fff4a7c860970ca8c5234150f43d8997ac161a8dc38de7b6c72244606a899"
+    },
+    {
+      "path": "vllm/entrypoints/openai/api_server.py",
+      "before_sha256": "cce85dec645515eb38e7b4eb7711eb6a265731b9e1d3bd958ac8a1b1e87ac207",
+      "after_sha256": "b9b68c0025b623ece8c77e835570ac80b1f6c2dd13d03dc5ca4e3292ada1b12e"
+    },
+    {
+      "path": "vllm/model_executor/layers/sparse_attn_indexer.py",
+      "before_sha256": "9a414da00e628778f7016ffd1e6b15051be1364a2c9fa2cec754e8074b190eab",
+      "after_sha256": "052352b13157fd1d245f47da90b58636cc173a5a2701fbba9cc66a61b22f45fd"
+    },
+    {
+      "path": "vllm/model_executor/models/deepseek_v2.py",
+      "before_sha256": "f22d4458a604875fbc3fb194119519734b3f2b2460276ef2091419ed6988f1be",
+      "after_sha256": "ae37085114a39ec955b477c2d95d8c0606637407aa7c31870106efccdf61786d"
+    },
+    {
+      "path": "vllm/models/deepseek_v4/common/ops/cache_utils.py",
+      "before_sha256": "0d65322289248b9062580f8bcee90997fedf6378de456f1af8a2203484fbaee3",
+      "after_sha256": "7ea804ac50f82f3b9edf750a098c18a80c1c153d6755b43b5c14dbc5ca6c159e"
+    },
+    {
+      "path": "vllm/models/deepseek_v4/nvidia/flashmla.py",
+      "before_sha256": "42ccf698e6a1a27313d01758e05013138cea83d47a4ee7c76f54dac1641f5fec",
+      "after_sha256": "04daff87ff853a70c6bbc506f983643210bc3e2c831760c904445e106f78008a"
+    },
+    {
+      "path": "vllm/models/deepseek_v4/nvidia/model.py",
+      "before_sha256": "f0170849766977b46ba855fe3869f963df7094342988ac966e094c46875a83e7",
+      "after_sha256": "cbb4c35f7aacf12c83dbf7ef490b5ba1f972ff616446a4afbdd3015bb9ec6d84"
+    },
+    {
+      "path": "vllm/v1/attention/backends/mla/indexer.py",
+      "before_sha256": "39c17c192f5f04563a9b479acda04d26c5d77c5afc1dd793e7cd78ee75a3a63a",
+      "after_sha256": "53cd6c03b393153e0da942b9641b85b3615ee992428c350d7cedb61dd2e34a2f"
+    },
+    {
+      "path": "vllm/v1/core/kv_cache_utils.py",
+      "before_sha256": "6add6f1d60634b0819833675d86be4adf00c13fe5d0a1605074353b55d3e2d39",
+      "after_sha256": "862f1e10832e46e68ee0c91e5c4f02050b2fe09e9013a734aee8fcc276349594"
+    },
+    {
+      "path": "vllm/v1/core/sched/scheduler.py",
+      "before_sha256": "2ed2a550b6558b2495eda845a97ae38bcf0225027b9e25fbf00fc3880c1d3941",
+      "after_sha256": "5bba2b96a986bd376add63b0470d64c08bafa5ef4ed89679f731f565c253cecc"
+    },
+    {
+      "path": "vllm/v1/worker/workspace.py",
+      "before_sha256": "d0650393bc657064acc97fe2b227ebff8f85799a8f727a8c136098f1f79964df",
+      "after_sha256": "3bb1d0e46009a56f70689bb186e2453bd420c08e8bb7d9eef4f87205ee02c651"
+    },
+    {
+      "path": "lmcache/integration/vllm/glm_forward_phase.py",
+      "before_sha256": null,
+      "after_sha256": "dc09c6ae1362831f41b1dea1f12e7f76609d7a1097daa5f2975869990e1c72dc"
+    },
+    {
+      "path": "lmcache/v1/device_miss.py",
+      "before_sha256": "effef19b153d118b936a999aa1ca613196316ab4bc549cf1f5f77ecc1a1ded90",
+      "after_sha256": "066e4f74b643c88d43c213c32dc4a22f240e203c08f49965a1bed13d9efa9ce7"
+    },
+    {
+      "path": "lmcache/v1/owner_device_read.py",
+      "before_sha256": "7c6f776ab65ba8ffd5f28177ff3e90fb9776da9cee30826f61b6507fac48c669",
+      "after_sha256": "7c6f776ab65ba8ffd5f28177ff3e90fb9776da9cee30826f61b6507fac48c669"
+    }
+  ]
+}

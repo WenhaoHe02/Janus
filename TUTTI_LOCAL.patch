@@ -1,0 +1,26 @@
+diff --git a/backends/local/kernel_modules/snvme-5.15.0-public/core.c b/backends/local/kernel_modules/snvme-5.15.0-public/core.c
+index f6c69fd..d431bb8 100644
+--- a/backends/local/kernel_modules/snvme-5.15.0-public/core.c
++++ b/backends/local/kernel_modules/snvme-5.15.0-public/core.c
+@@ -132,7 +132,7 @@ static void nvme_set_queue_dying(struct nvme_ns *ns)
+ 	if (test_and_set_bit(NVME_NS_DEAD, &ns->flags))
+ 		return;
+ 
+-	blk_set_queue_dying(ns->queue);
++	blk_mark_disk_dead(ns->disk);
+ 	blk_mq_unquiesce_queue(ns->queue);
+ 
+ 	set_capacity_and_notify(ns->disk, 0);
+diff --git a/backends/local/kernel_modules/snvme-5.15.0-public/multipath.c b/backends/local/kernel_modules/snvme-5.15.0-public/multipath.c
+index 14e5316..09dff75 100644
+--- a/backends/local/kernel_modules/snvme-5.15.0-public/multipath.c
++++ b/backends/local/kernel_modules/snvme-5.15.0-public/multipath.c
+@@ -793,7 +793,7 @@ void nvme_mpath_remove_disk(struct nvme_ns_head *head)
+ {
+ 	if (!head->disk)
+ 		return;
+-	blk_set_queue_dying(head->disk->queue);
++	blk_mark_disk_dead(head->disk);
+ 	/* make sure all pending bios are cleaned up */
+ 	kblockd_schedule_work(&head->requeue_work);
+ 	flush_work(&head->requeue_work);

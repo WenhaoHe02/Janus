@@ -1,0 +1,26 @@
+{
+  "model": "flash",
+  "arm": "k_local",
+  "model_path": "/models/DeepSeek-V4-Flash",
+  "storage_config": "/deployment/storage.yaml",
+  "warmup_inputs": "/deployment/warmup",
+  "max_model_len": 196608,
+  "max_num_batched_tokens": 8192,
+  "kv_cache_memory_bytes": 17179869184,
+  "gpu_memory_utilization": 0.55,
+  "dedicated_cache": true,
+  "host_mount_handoff": false,
+  "port": 8000,
+  "indexer_raw_regions": [
+    "/mnt/nvme0/janus/indexer.bin", "/mnt/nvme1/janus/indexer.bin",
+    "/mnt/nvme2/janus/indexer.bin", "/mnt/nvme3/janus/indexer.bin",
+    "/mnt/nvme4/janus/indexer.bin", "/mnt/nvme5/janus/indexer.bin",
+    "/mnt/nvme6/janus/indexer.bin", "/mnt/nvme7/janus/indexer.bin"
+  ],
+  "indexer_directories": [
+    "/mnt/nvme0/janus/indexer", "/mnt/nvme1/janus/indexer",
+    "/mnt/nvme2/janus/indexer", "/mnt/nvme3/janus/indexer",
+    "/mnt/nvme4/janus/indexer", "/mnt/nvme5/janus/indexer",
+    "/mnt/nvme6/janus/indexer", "/mnt/nvme7/janus/indexer"
+  ]
+}

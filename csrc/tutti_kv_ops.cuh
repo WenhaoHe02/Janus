@@ -1,0 +1,177 @@
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+
+#include <torch/all.h>
+
+// Batch-submit N NVMe SGL READ commands from a single GPU thread.
+//
+// Each I/O reads byte_lens[i] bytes from the NVMe namespace at logical
+// block address slbas[i], depositing the payload directly into the
+// HBM staging buffer whose NVMe IOVA is staging_iovas[i].
+//
+// The kernel runs single-threaded (<<<1,1>>> launch) so that the SQ
+// tail, doorbell writes, and counters need no synchronisation.
+//
+// Args:
+//   sq_dev_ptr:     Device VA of SQ ring (array of nvme_sqe[q_depth]).
+//   cq_dev_ptr:     Device VA of CQ ring (array of nvme_cqe[q_depth]).
+//   sq_db_ptr:      GPU VA of SQ tail doorbell in BAR0 (volatile uint32_t).
+//   cq_db_ptr:      GPU VA of CQ head doorbell in BAR0 (volatile uint32_t).
+//   sq_tail_ptr:    Managed/pinned uint16_t: current SQ tail.
+//   q_depth:        Hardware queue depth (power of 2, usually 64).
+//   qid:            NVMe I/O queue ID (informational only).
+//   nsid:           NVMe namespace ID (from NVM_GET_DEV_INFO.block_size).
+//   staging_iovas:  [n_ios] int64_t – NVMe IOVAs of HBM staging buffers.
+//   slbas:          [n_ios] int64_t – starting LBA per chunk.
+//   byte_lens:      [n_ios] int32_t – transfer size in bytes per chunk.
+//                   Must be a multiple of 512 (NVMe logical block size).
+//   stream_ptr:     cudaStream_t cast to int64_t (0 = default stream).
+void tutti_submit_batch_sgl_read(
+    int64_t sq_dev_ptr,
+    int64_t cq_dev_ptr,
+    int64_t sq_db_ptr,
+    int64_t cq_db_ptr,
+    int64_t sq_tail_ptr,
+    int q_depth,
+    int qid,
+    int64_t nsid,
+    at::Tensor staging_iovas,
+    at::Tensor slbas,
+    at::Tensor byte_lens,
+    int64_t stream_ptr);
+
+// Profile-only variant. ``doorbell_timestamps`` is a CUDA int64 tensor with
+// at least ``n_ios`` entries. Entry i receives the device-global timestamp
+// immediately after command i's SQ doorbell write.
+void tutti_submit_batch_sgl_read_profiled(
+    int64_t sq_dev_ptr,
+    int64_t cq_dev_ptr,
+    int64_t sq_db_ptr,
+    int64_t cq_db_ptr,
+    int64_t sq_tail_ptr,
+    int q_depth,
+    int qid,
+    int64_t nsid,
+    at::Tensor staging_iovas,
+    at::Tensor slbas,
+    at::Tensor byte_lens,
+    at::Tensor doorbell_timestamps,
+    int64_t stream_ptr);
+
+// Submit indexed fixed-size READs without materialising per-I/O descriptor
+// tensors on the host. selected_ids indexes slba_table; staging IOVAs are
+// derived from a persistent GPU-page IOVA table and a fixed staging stride.
+void tutti_submit_indexed_sgl_read(
+    int64_t sq_dev_ptr,
+    int64_t cq_dev_ptr,
+    int64_t sq_db_ptr,
+    int64_t cq_db_ptr,
+    int64_t sq_tail_ptr,
+    int q_depth,
+    int qid,
+    int64_t nsid,
+    at::Tensor staging_page_iovas,
+    int64_t staging_stride,
+    at::Tensor slba_table,
+    at::Tensor selected_ids,
+    int byte_len,
+    int64_t stream_ptr);
+
+// Enqueue one queue-bounded read using an int32 count produced on the GPU.
+// selected_ids is a fixed-capacity int64 CUDA vector; only [0:device_count[0]]
+// is read. Zero count does not touch the rings/doorbells. Submit, poll and
+// fail-closed status validation run on stream_ptr without any CPU readback.
+// Queue access and staging reuse must be serialized by the caller on that
+// same stream. The count/ID/table tensors must remain live through completion.
+// This single-page path supports 512-byte-aligned objects <=64KiB. Metadata
+// errors raise TORCH_CHECK; device count/ID or NVMe failure causes a device
+// assertion before dependent kernels can consume invalid KV.
+void tutti_read_indexed_device_count(
+    int64_t sq_dev_ptr, int64_t cq_dev_ptr, int64_t sq_db_ptr,
+    int64_t cq_db_ptr, int64_t sq_tail_ptr, int64_t cq_head_ptr,
+    int64_t cq_phase_ptr, int64_t timed_out_ptr, int q_depth, int qid,
+    int64_t nsid, at::Tensor staging_page_iovas, int64_t staging_stride,
+    at::Tensor slba_table, at::Tensor selected_ids, at::Tensor device_count,
+    int byte_len, at::Tensor status_out, int64_t max_iters,
+    int64_t stream_ptr);
+
+// Counted command-table variant for blocks crossing physical extents. Each
+// selected ID indexes one SLBA and int32 byte length (positive, sector aligned,
+// <=64KiB). Each selected piece gets its own staging row. The caller scatters
+// every piece to its logical block + byte offset after validation completes.
+// Other queue/lifetime/error contracts match the fixed API above.
+void tutti_read_indexed_segments_device_count(
+    int64_t sq_dev_ptr, int64_t cq_dev_ptr, int64_t sq_db_ptr,
+    int64_t cq_db_ptr, int64_t sq_tail_ptr, int64_t cq_head_ptr,
+    int64_t cq_phase_ptr, int64_t timed_out_ptr, int q_depth, int qid,
+    int64_t nsid, at::Tensor staging_page_iovas, int64_t staging_stride,
+    at::Tensor slba_table, at::Tensor selected_ids, at::Tensor device_count,
+    at::Tensor byte_lengths, at::Tensor status_out, int64_t max_iters,
+    int64_t stream_ptr);
+
+// Profile-only indexed variant. One batched doorbell makes all commands
+// visible together, so every used output entry receives the same timestamp.
+void tutti_submit_indexed_sgl_read_profiled(
+    int64_t sq_dev_ptr,
+    int64_t cq_dev_ptr,
+    int64_t sq_db_ptr,
+    int64_t cq_db_ptr,
+    int64_t sq_tail_ptr,
+    int q_depth,
+    int qid,
+    int64_t nsid,
+    at::Tensor staging_page_iovas,
+    int64_t staging_stride,
+    at::Tensor slba_table,
+    at::Tensor selected_ids,
+    int byte_len,
+    at::Tensor doorbell_timestamps,
+    int64_t stream_ptr);
+
+// Batch-submit N NVMe SGL WRITE commands from a single GPU thread.
+//
+// The arguments match tutti_submit_batch_sgl_read(); data is transferred from
+// HBM staging buffers to the NVMe namespace.
+void tutti_submit_batch_sgl_write(
+    int64_t sq_dev_ptr,
+    int64_t cq_dev_ptr,
+    int64_t sq_db_ptr,
+    int64_t cq_db_ptr,
+    int64_t sq_tail_ptr,
+    int q_depth,
+    int qid,
+    int64_t nsid,
+    at::Tensor staging_iovas,
+    at::Tensor slbas,
+    at::Tensor byte_lens,
+    int64_t stream_ptr);
+
+// Poll for n_ios NVMe CQE completions in parallel. Threads wait on strided CQ
+// slots; after the whole batch is visible, one thread advances head/phase and
+// writes the CQ doorbell once. On timeout, head/phase remain unchanged.
+//
+// Args:
+//   sq_dev_ptr / cq_dev_ptr / sq_db_ptr / cq_db_ptr: same as submit.
+//   cq_head_ptr:    Managed/pinned uint16_t: current CQ head.
+//   cq_phase_ptr:   Managed/pinned uint8_t:  current phase bit.
+//   q_depth:        Hardware queue depth.
+//   n_ios:          Number of completions to wait for.
+//   status_out:     [n_ios] int32_t – NVMe status word per CQE.
+//                   Zero indicates success; non-zero encodes SC/SCT.
+//   timed_out_ptr:  Managed/pinned int32_t – set to 1 on timeout.
+//   max_iters:      Per-CQE spin budget before declaring a timeout.
+//   stream_ptr:     cudaStream_t cast to int64_t (0 = default stream).
+void tutti_poll_batch(int64_t sq_dev_ptr, int64_t cq_dev_ptr, int64_t sq_db_ptr,
+                      int64_t cq_db_ptr, int64_t cq_head_ptr,
+                      int64_t cq_phase_ptr, int q_depth, int n_ios,
+                      at::Tensor status_out, int64_t timed_out_ptr,
+                      int64_t max_iters, int64_t stream_ptr);
+
+// Profile-only poll variant. ``cqe_timestamps[i]`` is the device-global time
+// at which the polling thread first observes command i's expected phase bit.
+void tutti_poll_batch_profiled(
+    int64_t sq_dev_ptr, int64_t cq_dev_ptr, int64_t sq_db_ptr,
+    int64_t cq_db_ptr, int64_t cq_head_ptr, int64_t cq_phase_ptr,
+    int q_depth, int n_ios, at::Tensor status_out, int64_t timed_out_ptr,
+    int64_t max_iters, at::Tensor cqe_timestamps, at::Tensor observed_cids,
+    int64_t stream_ptr);

@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Replace these with dedicated, preallocated per-rank regions on your node.
+chunk_size: 256
+local_cpu: false
+local_disk: /mnt/nvme0/janus/cache,/mnt/nvme1/janus/cache,/mnt/nvme2/janus/cache,/mnt/nvme3/janus/cache,/mnt/nvme4/janus/cache,/mnt/nvme5/janus/cache,/mnt/nvme6/janus/cache,/mnt/nvme7/janus/cache
+local_disk_path_sharding: by_gpu
+max_local_disk_size: 32.0
+internal_api_server_enabled: true
+internal_api_server_host: 127.0.0.1
+internal_api_server_port_start: 7299
+extra_config:
+  kv_object_store_tutti_raw_enable: true
+  kv_object_store_tutti_raw_region_path: /mnt/nvme0/janus/kv.bin,/mnt/nvme1/janus/kv.bin,/mnt/nvme2/janus/kv.bin,/mnt/nvme3/janus/kv.bin,/mnt/nvme4/janus/kv.bin,/mnt/nvme5/janus/kv.bin,/mnt/nvme6/janus/kv.bin,/mnt/nvme7/janus/kv.bin
+  kv_object_store_capacity: 4096
