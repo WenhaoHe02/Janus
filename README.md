@@ -9,8 +9,8 @@ ahead of attention, and loads missing blocks on demand.
 - **Parallel prediction:** shard the prediction key space across GPUs.
 - **Overlapped recovery:** overlap sparse KV reads with model execution.
 - **Unified serving:** one launcher for DeepSeek-V4-Flash, DeepSeek-V4-Pro, and GLM-5.2.
-- **Startup warmup:** build native extensions and warm up configured inputs before
-  publishing server readiness.
+- **Request-aware writeback:** throttle background writes during request processing
+  to reduce I/O interference, and write without throttling when idle.
 
 [Installation](#installation) · [Quick Start](#quick-start) ·
 [Usage](#usage) · [Project Structure](#project-structure) · [License](#license)
@@ -19,7 +19,7 @@ ahead of attention, and loads missing blocks on demand.
 
 ### Dependencies
 
-- Linux with eight NVIDIA Hopper GPUs (`sm_90`) and per-rank NVMe storage.
+- Linux with NVIDIA Hopper GPUs (`sm_90`) and NVMe storage.
 - Python 3.12, PyTorch 2.11.0 with CUDA 13.0, and the CUDA 13.0 toolkit.
 - vLLM 0.26.0 at revision `ffd46bfab2128bb84146050e98b51a617c6575ab`.
 - [Tutti](https://github.com/xPU-IO/Tutti) at revision
@@ -58,7 +58,7 @@ starting Janus. Use dedicated cache regions: startup preparation clears them.
 | DeepSeek-V4-Pro | `pro` |
 | GLM-5.2 | `glm` |
 
-Set `arm` to `k_local` for predictive prefetching or `no_prefetch` for demand loading.
+Predictive prefetching is enabled in the provided deployment template.
 
 ### 2. Prepare warmup inputs
 
