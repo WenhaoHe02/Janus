@@ -48,8 +48,8 @@ cp config/storage.example.yaml /deployment/storage.yaml
 ```
 
 Edit the model checkpoint, warmup directory, memory budget, and storage paths.
-Storage paths are absolute and ordered by tensor-parallel rank, with eight entries
-per list. Provision the KV and indexer regions through the Tutti backend before
+Storage paths are absolute and ordered by tensor-parallel rank, with one entry
+per rank. Provision the KV and indexer regions through the Tutti backend before
 starting Janus. Use dedicated cache regions: startup preparation clears them.
 
 | Model | Configuration value |

@@ -67,8 +67,8 @@
     {
       "path": "README.md",
       "origin": "submission_readme",
-      "sha256": "7ecf250681aa3e57f0ee5939d18b2e5f69ccc20f96c647063e7a1fe6b8453c3a",
-      "bytes": 5093
+      "sha256": "45db3c9cb03f2798d77aadae85e8e586b318cd2c2d098e7676bc97ee59f04c82",
+      "bytes": 5089
     },
     {
       "path": "csrc/ac_dec.cu",
