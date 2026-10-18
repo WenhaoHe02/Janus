@@ -2,6 +2,8 @@
 
 **SSD-backed KV-cache management for long-context LLM serving.**
 
+**Paper:** [Efficient Agentic LLM Serving over SSD-based Sparse KV Storage](https://arxiv.org/abs/2609.36938)
+
 Janus integrates sparse KV prediction and GPU-direct NVMe I/O with vLLM. It
 partitions prediction across tensor-parallel ranks, prefetches sparse KV blocks
 ahead of attention, and loads missing blocks on demand.
